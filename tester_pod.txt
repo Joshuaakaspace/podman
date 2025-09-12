@@ -1,0 +1,11 @@
+dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
+dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
+wsl --install          # installs the WSL package and a default distro (or prompts you)
+wsl --set-default-version 2
+wsl --update           # gets the latest Linux kernel
+wsl --install -d Ubuntu
+wsl --status
+wsl --list --verbose   # you should see your distro with VERSION = 2
+podman machine init
+podman machine start
+podman info
