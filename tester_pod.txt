@@ -9,3 +9,5 @@ wsl --list --verbose   # you should see your distro with VERSION = 2
 podman machine init
 podman machine start
 podman info
+
+pip install <package> --trusted-host pypi.org --trusted-host files.pythonhosted.org --no-verify-ssl
