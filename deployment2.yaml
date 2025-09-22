@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: new-app-deployment
+  labels:
+    app: new-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: new-app
+  template:
+    metadata:
+      labels:
+        app: new-app
+    spec:
+      imagePullSecrets:
+        - name: acr-creds   # <-- created in step 0
+      containers:
+        - name: new-app
+          image: aztest2.azurecr.io/new_app:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5000
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 5000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: new-app-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: new-app
+  ports:
+    - port: 80
+      targetPort: 5000
