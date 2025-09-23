@@ -1,0 +1,172 @@
+📘 Documentation: Creating an AKS Cluster and Integrating with ACR
+1. Prerequisites
+
+An active Azure Subscription
+
+Installed:
+
+Azure CLI
+
+kubectl (can be installed via Azure CLI)
+
+Docker or Podman (for building container images)
+
+Login to Azure:
+
+az login
+
+
+Optionally set the subscription (if you have more than one):
+
+az account set --subscription "<SUBSCRIPTION_ID_OR_NAME>"
+
+2. Create a Resource Group
+
+Resource groups are logical containers for your resources.
+
+az group create --name myResourceGroup --location eastus
+
+3. Create an Azure Container Registry (ACR)
+
+This is where you’ll store your container images.
+
+az acr create --resource-group myResourceGroup \
+  --name myacr12345 \
+  --sku Basic
+
+
+myacr12345 must be globally unique.
+
+Get the login server (used in image names):
+
+az acr show --name myacr12345 --query loginServer -o tsv
+
+4. Create an AKS Cluster
+az aks create \
+  --resource-group myResourceGroup \
+  --name myAKSCluster \
+  --node-count 2 \
+  --enable-addons monitoring \
+  --generate-ssh-keys
+
+
+This provisions a 2-node AKS cluster.
+
+5. Connect kubectl to AKS
+az aks get-credentials --resource-group myResourceGroup --name myAKSCluster
+
+
+Verify connection:
+
+kubectl get nodes
+
+6. Integrate AKS with ACR
+
+There are two ways to give AKS access to ACR:
+
+Option A: Attach ACR directly (preferred if you have RBAC rights)
+az aks update -n myAKSCluster -g myResourceGroup --attach-acr myacr12345
+
+Option B: Use imagePullSecrets (if you don’t have permission to attach ACR)
+
+Enable ACR admin:
+
+az acr update -n myacr12345 --admin-enabled true
+
+
+Get credentials:
+
+az acr credential show -n myacr12345
+
+
+Create secret in AKS:
+
+kubectl create secret docker-registry acr-creds \
+  --docker-server=myacr12345.azurecr.io \
+  --docker-username=<USERNAME> \
+  --docker-password=<PASSWORD> \
+  --docker-email=none@example.com
+
+7. Build and Push Your Image
+
+Build locally:
+
+docker build -t myapp:latest .
+
+
+Tag for ACR:
+
+docker tag myapp:latest myacr12345.azurecr.io/myapp:latest
+
+
+Login and push:
+
+az acr login -n myacr12345
+docker push myacr12345.azurecr.io/myapp:latest
+
+
+Verify in ACR:
+
+az acr repository show-tags -n myacr12345 --repository myapp -o table
+
+8. Deploy to AKS
+
+Example deployment.yaml:
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: myapp
+  template:
+    metadata:
+      labels:
+        app: myapp
+    spec:
+      imagePullSecrets:
+        - name: acr-creds   # Only if using Option B
+      containers:
+      - name: myapp
+        image: myacr12345.azurecr.io/myapp:latest
+        ports:
+        - containerPort: 5000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: myapp-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: myapp
+  ports:
+    - port: 80
+      targetPort: 5000
+
+
+Apply:
+
+kubectl apply -f deployment.yaml
+
+
+Check:
+
+kubectl get pods
+kubectl get svc myapp-service
+
+
+When the EXTERNAL-IP appears, you can access your app at:
+
+http://<EXTERNAL-IP>
+
+9. Verify End-to-End
+
+Pods are running: kubectl get pods
+
+Endpoints exist: kubectl get endpoints myapp-service
+
+Service responds at external IP
