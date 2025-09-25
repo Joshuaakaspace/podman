@@ -13,4 +13,15 @@ podman info
 pip install <package> --trusted-host pypi.org --trusted-host files.pythonhosted.org --no-verify-ssl
 az policy assignment list --query "[?contains(displayName, 'AKS')]" -o table
 
+ACR_ID=$(az acr show -n <ACR_NAME> -g <RG_ACR> --query id -o tsv)
+KUBE_OID=$(az aks show -n <AKS_NAME> -g <RG_AKS> --query identityProfile.kubeletidentity.objectId -o tsv)
+
+az role assignment create \
+  --assignee-object-id "$KUBE_OID" \
+  --assignee-principal-type ServicePrincipal \
+  --role "AcrPull" \
+  --scope "$ACR_ID"
+
+
+
 
