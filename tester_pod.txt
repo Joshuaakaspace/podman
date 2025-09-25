@@ -11,3 +11,6 @@ podman machine start
 podman info
 
 pip install <package> --trusted-host pypi.org --trusted-host files.pythonhosted.org --no-verify-ssl
+az policy assignment list --query "[?contains(displayName, 'AKS')]" -o table
+
+
