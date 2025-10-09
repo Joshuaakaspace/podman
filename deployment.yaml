@@ -2,20 +2,42 @@ FROM node:20
 
 WORKDIR /app
 
-# Optional: if you use a private registry
-# RUN npm config set registry https://centralauth.jfrog.io/artifactory/api/npm/glb-npm-virtual/
+# -----------------------------
+# 1. Add corporate certificate
+# -----------------------------
+# (Ensure you have your company's root CA)
+COPY company-rootCA.crt /usr/local/share/ca-certificates/company-rootCA.crt
+RUN update-ca-certificates
 
-# Copy dependency files first (for Docker cache efficiency)
-COPY .npmrc package.json pnpm-lock.yaml ./
+# Tell Node.js to trust corporate CA
+ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 
-# Install dependencies
-RUN npm install -g pnpm && pnpm install --frozen-lockfile
+# -----------------------------
+# 2. Set npmrc configuration
+# -----------------------------
+# Using ARG to inject token securely during build
+ARG NPM_TOKEN
 
-# Copy the rest of the app
+RUN npm config set registry "https://centralauth.jfrog.io/artifactory/api/npm/all1y-dashboard-npm-vir/" \
+    && npm config set always-auth true \
+    && npm config set //centralauth.jfrog.io/artifactory/api/npm/all1y-dashboard-npm-vir/:_authToken=$NPM_TOKEN \
+    && npm config set cafile /etc/ssl/certs/ca-certificates.crt \
+    && npm config set strict-ssl true
+
+# -----------------------------
+# 3. Copy dependency files and install pnpm via corepack
+# -----------------------------
+COPY package.json pnpm-lock.yaml ./
+
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+RUN pnpm install --frozen-lockfile
+
+# -----------------------------
+# 4. Copy rest of app
+# -----------------------------
 COPY . .
 
-# Expose the application port
 EXPOSE 3000
-
-# Run the app
 CMD ["pnpm", "dev"]
+
