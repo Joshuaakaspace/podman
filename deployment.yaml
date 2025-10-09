@@ -1,34 +1,21 @@
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: new-app-deployment
-  labels:
-    app: new-app
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: new-app
-  template:
-    metadata:
-      labels:
-        app: new-app
-    spec:
-      containers:
-      - name: new-app
-        image: aztest2.azurecr.io/new_app:latest
-        ports:
-        - containerPort: 5000
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: new-app-service
-spec:
-  type: LoadBalancer
-  selector:
-    app: new-app
-  ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 5000
+FROM node:20
+
+WORKDIR /app
+
+# Optional: if you use a private registry
+# RUN npm config set registry https://centralauth.jfrog.io/artifactory/api/npm/glb-npm-virtual/
+
+# Copy dependency files first (for Docker cache efficiency)
+COPY .npmrc package.json pnpm-lock.yaml ./
+
+# Install dependencies
+RUN npm install -g pnpm && pnpm install --frozen-lockfile
+
+# Copy the rest of the app
+COPY . .
+
+# Expose the application port
+EXPOSE 3000
+
+# Run the app
+CMD ["pnpm", "dev"]
