@@ -1,26 +1,130 @@
-dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
-dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
-wsl --install          # installs the WSL package and a default distro (or prompts you)
-wsl --set-default-version 2
-wsl --update           # gets the latest Linux kernel
-wsl --install -d Ubuntu
-wsl --status
-wsl --list --verbose   # you should see your distro with VERSION = 2
-podman machine init
-podman machine start
-podman info
+) D-JEPA — Denoising with a Joint-Embedding Predictive Architecture (2024)
 
-pip install <package> --trusted-host pypi.org --trusted-host files.pythonhosted.org --no-verify-ssl
-az policy assignment list --query "[?contains(displayName, 'AKS')]" -o table
+Bridges JEPA-style representation learning with generative modeling, which classic JEPAs don’t directly do.
 
-ACR_ID=$(az acr show -n <ACR_NAME> -g <RG_ACR> --query id -o tsv)
-KUBE_OID=$(az aks show -n <AKS_NAME> -g <RG_AKS> --query identityProfile.kubeletidentity.objectId -o tsv)
+Reinterprets JEPA as a masked image modeling / next-token prediction scheme for generation.
 
-az role assignment create \
-  --assignee-object-id "$KUBE_OID" \
-  --assignee-principal-type ServicePrincipal \
-  --role "AcrPull" \
-  --scope "$ACR_ID"
+Generates images autoregressively by predicting missing/unknown tokens progressively.
+
+Uses a diffusion loss to model each token’s probability distribution in continuous space.
+
+Also supports flow-matching loss as an alternative objective (more flexibility in training).
+
+Emphasizes scaling behavior: better FID with increased compute (GFLOPs) and fewer epochs.
+
+Reports strong ImageNet class-conditional results across model sizes (base/large/huge).
+
+Notes the method is extendable beyond images to other continuous data like video and audio.
+
+2) N-JEPA — Improving Joint Embedding Predictive Architecture with Diffusion Noise (2025)
+
+Targets better self-supervised learning (SSL) by connecting MIM (masked image modeling) with diffusion.
+
+Key idea: treat diffusion noise as a “continuous mask state,” not just binary mask/unmask.
+
+Proposes N-JEPA (Noise-based JEPA) that injects diffusion noise into the JEPA/MIM pipeline.
+
+Implements this via position embeddings of masked/noised tokens (so noise level is learnable context).
+
+Introduces a multi-level noise schedule (multiple corruption strengths) like robust feature augmentation.
+
+The schedule is framed as improving robustness and invariance of learned representations.
+
+Focus is more on representation quality than pure image generation benchmarking.
+
+Useful if you want JEPA features that are stable under graded corruption, similar to diffusion training.
+
+3) D-JEPA·T2I — High-Resolution Image Synthesis via Next-Token Prediction (2024/2025)
+
+Extends D-JEPA from class-conditional to text-to-image (T2I) generation.
+
+Keeps an autoregressive next-token style, but tokens are continuous (not discrete codebook ids).
+
+Uses a multimodal visual transformer to fuse text + visual features effectively.
+
+Replaces diffusion loss with flow matching for faster / more flexible training dynamics.
+
+Adds Visual Rotary Positional Embedding (VoPE) to support continuous-resolution learning.
+
+Claims generation at arbitrary resolutions, reporting up to 4K outputs.
+
+Introduces a data feedback mechanism to improve data utilization efficiency during training.
+
+Positioned as: “next-token prediction can scale to high-res T2I” (not just diffusion-only pipelines).
+
+4) JEDI — Joint Embedding DIffusion (2025, world model / RL)
+
+A latent diffusion world model aimed at model-based reinforcement learning (MBRL).
+
+Motivated by agent–human performance asymmetry observed in some pixel-based world-model methods.
+
+Hypothesis: pixel-space methods lack a temporally structured latent space trained for world modeling.
+
+JEDI trains end-to-end in latent space, instead of bolting diffusion onto fixed encoders.
+
+Uses a self-consistency objective to stabilize latent dynamics and predictions.
+
+The “joint embedding” aspect is about learning latents that are useful for temporal prediction + control.
+
+Positioned as improving generality across different task types (agent-optimal vs human-optimal framing).
+
+If your “JE-LDM” is about joint latents + diffusion in latent dynamics, this is the closest match.
+
+5) CATDM — Mitigating Embedding Collapse in Diffusion Models for Categorical Data (2024)
+
+Studies diffusion for categorical/discrete data via a continuous embedding space approach.
+
+Observes that end-to-end learning of embeddings + diffusion can cause embedding collapse.
+
+Proposes CATDM, a continuous diffusion framework designed to stabilize this joint training.
+
+Uses an objective combining a joint embedding–diffusion variational bound with extra regularization.
+
+Adds a Consistency-Matching (CM) regularizer intended to prevent collapse and recover true density.
+
+Introduces training tweaks like a shifted cosine noise schedule and random dropping strategy.
+
+Reports improvements on vision benchmarks and also mentions competitiveness on some text/translation setups.
+
+Best read if your JE-LDM interest is “learn the embedding space and diffusion together safely.”
+
+6) LRDM — Representation Learning with Diffusion Models (2022)
+
+Starts from the point that diffusion/LDM latents can be poor semantic representations.
+
+Adds a separate representation encoder that extracts features from the clean image.
+
+Conditions the latent diffusion model on those representations (representation-guided generation).
+
+Trains the diffusion model + representation encoder jointly, so reps align with denoising needs.
+
+Introduces a tractable representation prior, enabling unconditional sampling of representations.
+
+Claims the learned reps allow faithful reconstructions and semantic interpolations.
+
+Also reports that image-parameterized LDM variants can be competitive for generation.
+
+Good “bridge paper” if you want JE-like semantic embeddings living alongside an LDM.
+
+7) LDM — High-Resolution Image Synthesis with Latent Diffusion Models (Rombach et al., 2022)
+
+Core idea: run diffusion in a compressed latent space from a pretrained autoencoder.
+
+This massively reduces compute vs pixel diffusion while keeping high perceptual quality.
+
+Decomposes the pipeline into (1) encode to latent, (2) diffusion denoise in latent, (3) decode.
+
+Introduces conditioning mechanisms (notably cross-attention) to inject text/other signals.
+
+Enables a strong trade-off point between detail preservation and complexity reduction.
+
+Demonstrates strong results on inpainting, super-resolution, class-conditional and unconditional tasks.
+
+Became the backbone pattern for many later text-to-image systems (Stable Diffusion lineage).
+
+This is the “LDM half” you’ll keep comparing against when you say “JE-LDM.”
+
+If you want, I can also do a “JE-LDM reading order” (what to read first + which sections) depending on whether you care about (a) representation learning, (b) image generation, or (c) world models / temporal latents.
 
 
 
